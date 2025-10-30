@@ -1,0 +1,335 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Natural Language Policy Results
+{% endblock %}
+
+{% block content %}
+    <h1>Generated Natural Language Policy</h1>
+    <p>Your technical ABAC rules have been converted into a clear, easy-to-understand natural language policy.</p>
+    
+    <div class="results-container">
+        <div class="policy-section">
+            <div class="section-header">
+                <h2>Natural Language Policy</h2>
+                <div class="policy-actions">
+                    <form method="POST" action="{{ url_for('main.download') }}" style="display: inline;">
+                        <input type="hidden" name="policy_text" value="{{ policy }}">
+                        <button type="submit" class="btn btn-download">
+                            <i class="download-icon">📥</i> Download Policy
+                        </button>
+                    </form>
+                    <button onclick="copyToClipboard()" class="btn btn-copy">
+                        <i class="copy-icon">📋</i> Copy to Clipboard
+                    </button>
+                </div>
+            </div>
+            
+            <div class="policy-content">
+                <div class="policy-text" id="policyText">
+                    {{ policy | replace('\n', '<br>') | safe }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="original-rules-section">
+            <div class="section-header">
+                <h3>Original Technical Rules</h3>
+                <button onclick="toggleOriginalRules()" class="btn btn-toggle" id="toggleBtn">
+                    <i class="toggle-icon">👁️</i> Show Original Rules
+                </button>
+            </div>
+            
+            <div class="original-rules-content" id="originalRules" style="display: none;">
+                <pre class="rules-text">{{ original_rules }}</pre>
+            </div>
+        </div>
+    </div>
+    
+    <div class="navigation-actions">
+        <a href="{{ url_for('main.natural_language_policy') }}" class="btn btn-primary">
+            Generate Another Policy
+        </a>
+        <a href="{{ url_for('main.start') }}" class="btn btn-secondary">
+            Back to Home
+        </a>
+    </div>
+    
+    <div class="info-section">
+        <h3>Policy Features</h3>
+        <div class="features-grid">
+            <div class="feature-item">
+                <h4>📖 Simple & Clear</h4>
+                <p>Complex technical rules are explained in everyday language that anyone can understand, like explaining to a friend.</p>
+            </div>
+            <div class="feature-item">
+                <h4>☕ Conversational Tone</h4>
+                <p>Written in a friendly, approachable style that makes security policies feel less intimidating and more relatable.</p>
+            </div>
+            <div class="feature-item">
+                <h4>🎯 Focused Content</h4>
+                <p>Keeps the explanation short and to the point, focusing on the main patterns without overwhelming technical details.</p>
+            </div>
+            <div class="feature-item">
+                <h4>🔑 Easy to Remember</h4>
+                <p>Uses simple analogies and everyday examples to help people remember and understand the access control rules.</p>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyToClipboard() {
+    const policyText = document.getElementById('policyText').textContent;
+    navigator.clipboard.writeText(policyText).then(function() {
+        // Show success message
+        const btn = event.target.closest('.btn-copy');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="copy-icon">✅</i> Copied!';
+        btn.style.background = '#28a745';
+        
+        setTimeout(function() {
+            btn.innerHTML = originalText;
+            btn.style.background = '';
+        }, 2000);
+    }).catch(function(err) {
+        console.error('Could not copy text: ', err);
+        alert('Failed to copy to clipboard. Please select and copy manually.');
+    });
+}
+
+function toggleOriginalRules() {
+    const rulesDiv = document.getElementById('originalRules');
+    const toggleBtn = document.getElementById('toggleBtn');
+    
+    if (rulesDiv.style.display === 'none') {
+        rulesDiv.style.display = 'block';
+        toggleBtn.innerHTML = '<i class="toggle-icon">🙈</i> Hide Original Rules';
+    } else {
+        rulesDiv.style.display = 'none';
+        toggleBtn.innerHTML = '<i class="toggle-icon">👁️</i> Show Original Rules';
+    }
+}
+
+// Auto-resize textarea if present
+document.addEventListener('DOMContentLoaded', function() {
+    const textareas = document.querySelectorAll('textarea');
+    textareas.forEach(function(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    });
+});
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+.results-container {
+    margin: 2rem 0;
+}
+
+.policy-section, .original-rules-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid #e9ecef;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.section-header h2, .section-header h3 {
+    color: #495057;
+    margin: 0;
+}
+
+.policy-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.policy-content {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.policy-text {
+    line-height: 1.8;
+    color: #495057;
+    font-size: 16px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.original-rules-content {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    border: 1px solid #dee2e6;
+    margin-top: 1rem;
+}
+
+.rules-text {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 5px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: #495057;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+    color: white;
+}
+
+.btn-download {
+    background: #28a745;
+    color: white;
+}
+
+.btn-download:hover {
+    background: #218838;
+    color: white;
+}
+
+.btn-copy {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-copy:hover {
+    background: #138496;
+    color: white;
+}
+
+.btn-toggle {
+    background: #ffc107;
+    color: #212529;
+}
+
+.btn-toggle:hover {
+    background: #e0a800;
+    color: #212529;
+}
+
+.navigation-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.info-section {
+    margin-top: 3rem;
+    padding: 2rem;
+    background: #e9ecef;
+    border-radius: 10px;
+}
+
+.info-section h3 {
+    color: #495057;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.feature-item {
+    text-align: center;
+    padding: 1rem;
+}
+
+.feature-item h4 {
+    color: #007bff;
+    margin-bottom: 1rem;
+    font-size: 16px;
+}
+
+.feature-item p {
+    color: #6c757d;
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .policy-actions {
+        justify-content: center;
+    }
+    
+    .btn {
+        flex: 1;
+        justify-content: center;
+        min-width: 120px;
+    }
+    
+    .navigation-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .policy-content, .original-rules-content {
+        padding: 1rem;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Policy Generation Results
+{% endblock %}
+
+{% block content %}
+    <h1>Analysis Complete</h1>
+    <p>Review the verification report and generated policy narrative below.</p>
+    
+    <div class="results-container">
+        <div class="verification-results">
+            <h3>Verification Report</h3>
+            <pre>{{ verification_report }}</pre>
+        </div>
+        
+        <div class="policy-narrative">
+            <h3>Generated Policy Narrative</h3>
+            <p>{{ policy }}</p>
+        </div>
+
+        <!-- Download Form -->
+        <form action="{{ url_for('main.download') }}" method="post" class="download-form">
+            <textarea name="policy_text" style="display:none;">{{ policy }}</textarea>
+            <button type="submit" class="download-button">Download Policy as .txt</button>
+        </form>
+        
+        <a href="{{ url_for('main.index') }}" class="back-link">← Generate a New Policy</a>
+    </div>
+{% endblock %}

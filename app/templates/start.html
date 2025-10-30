@@ -1,0 +1,175 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    ABAC Policy Generator & Verifier
+{% endblock %}
+
+{% block content %}
+    <h1>ABAC Policy Generator & Verifier</h1>
+    <p>Choose your workflow to get started with ABAC policy generation.</p>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="workflow-selection">
+        <div class="workflow-option">
+            <h3>Compress Logs</h3>
+            <p>Generate a Python script to compress and analyze your access control logs by extracting unique patterns for ABAC policy mining.</p>
+            <a href="{{ url_for('main.format_detection', workflow='compress') }}" class="workflow-button">
+                Compress Logs
+            </a>
+        </div>
+        
+        <div class="workflow-option">
+            <h3>Generate Rules</h3>
+            <p>Generate ABAC rules directly from your data files using advanced policy mining algorithms.</p>
+            <a href="{{ url_for('main.format_detection', workflow='rules') }}" class="workflow-button">
+                Generate Rules
+            </a>
+        </div>
+        
+        <div class="workflow-option">
+            <h3>Direct Policy Generation</h3>
+            <p>Use the original workflow to directly generate and verify ABAC policies from your data files.</p>
+            <a href="{{ url_for('main.policy_generation') }}" class="workflow-button">
+                Generate Policy
+            </a>
+        </div>
+        
+        <div class="workflow-option">
+            <h3>Natural Language Policy</h3>
+            <p>Convert technical ABAC rules into a short, friendly story that anyone can understand.</p>
+            <a href="{{ url_for('main.natural_language_policy') }}" class="workflow-button">
+                Generate Natural Language Policy
+            </a>
+        </div>
+    </div>
+    
+    <div class="workflow-info">
+        <h3>What's the difference?</h3>
+        <ul>
+            <li><strong>Compress Logs:</strong> Creates a Python script that can dynamically parse various log formats and compress them into unique access patterns. Perfect for preprocessing large datasets.</li>
+            <li><strong>Generate Rules:</strong> Creates a Python script that generates ABAC policy rules using machine learning algorithms. Best for automated rule generation.</li>
+            <li><strong>Direct Policy Generation:</strong> Uses the original workflow to directly generate and verify ABAC policies from your data files. Best for immediate policy generation with verification.</li>
+            <li><strong>Natural Language Policy:</strong> Converts technical ABAC rules into a short, friendly story that anyone can understand, perfect for explaining access control to non-technical audiences.</li>
+        </ul>
+    </div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.workflow-selection {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin: 2rem 0;
+    justify-content: center;
+}
+
+.workflow-option {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    flex: 1;
+    max-width: 300px;
+    transition: all 0.3s ease;
+}
+
+.workflow-option:hover {
+    border-color: #007bff;
+    box-shadow: 0 4px 8px rgba(0,123,255,0.1);
+    transform: translateY(-2px);
+}
+
+.workflow-option h3 {
+    color: #007bff;
+    margin-bottom: 1rem;
+}
+
+.workflow-option p {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.workflow-button {
+    display: inline-block;
+    background: #007bff;
+    color: white;
+    padding: 12px 24px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.workflow-button:hover {
+    background: #0056b3;
+    color: white;
+    text-decoration: none;
+}
+
+.workflow-info {
+    background: #e9ecef;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.workflow-info h3 {
+    color: #495057;
+    margin-bottom: 1rem;
+}
+
+.workflow-info ul {
+    text-align: left;
+    color: #6c757d;
+}
+
+.workflow-info li {
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
+.alert {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+@media (max-width: 768px) {
+    .workflow-selection {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .workflow-option {
+        max-width: 100%;
+    }
+}
+</style>
+{% endblock %}

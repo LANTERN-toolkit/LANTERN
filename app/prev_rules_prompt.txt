@@ -1,0 +1,710 @@
+rules_prompt = '''
+
+You are an expert Python developer specializing in writing robust, clean, and self-contained data processing scripts. Your task is to create a complete, runnable Python script for a cybersecurity project.
+
+### Project Context
+We are building a system to mine Attribute-Based Access Control (ABAC) policies from various data sources. The core of our system is a Python class called `ABACPolicyMiner` which ingests data in specific, structured Python formats.
+
+Our raw data comes from three separate text files (`users.txt`, `resources.txt`, `logs.txt`) with a custom format. We need a complete script that reads these files, parses them correctly, and runs the policy mining algorithm.
+
+### Your Task
+Your goal is to write a complete Python script. This script must contain two main parts:
+1.  A universal parsing function called `parse_data_file`.
+2.  A `main` function that orchestrates the entire process of reading, parsing, and mining.
+
+### Part 1: Detailed Requirements for the `parse_data_file` function
+
+1.  **Function Signature:** It must be `def parse_data_file(file_content: str, file_type: str) -> Union[Dict, List]:`
+2.  **Robustness and Cleaning (CRITICAL):**
+    *   It must ignore lines starting with `#` and blank lines.
+    *   It must handle the `<` and `>` characters that wrap each valid line by stripping them *before* processing the line.
+    *   **Example Transformation:** `"<alice ... allow>"` must be cleaned to `"alice ... allow"`.
+3.  **Parsing Logic:**
+    *   **For `file_type` 'user' or 'resource':** Parse lines like `<name key1:value1 ...>` into a single dictionary (e.g., `{{"alice": {{"department": "Finance"}}, ...}}`).
+    *   **For `file_type` 'log':** Parse lines like `<user resource op time decision>` into a list of dictionaries (e.g., `[{{'user_name': 'alice', 'object_name': 'budget_2024', ...}}, ...]`).
+4.  **Error Handling:** Print a warning for and skip any malformed lines.
+
+### Part 2: Detailed Requirements for the `main` function
+
+1.  **File Handling:** The `main` function must handle reading the three required data files. The filenames are fixed and must be:
+    *   `users_filename = "users.txt"`
+    *   `resources_filename = "resources.txt"`
+    *   `logs_filename = "logs.txt"`
+2.  **Orchestration:** The function must perform the following steps in order:
+    a.  Read the content of `users.txt`, `resources.txt`, and `logs.txt`. Use a `try...except FileNotFoundError` block for each read operation to handle missing files gracefully.
+    b.  Call your `parse_data_file` function for each file's content to get the structured Python data.
+    c.  Instantiate the `ABACPolicyMiner` class.
+    d.  Call the `miner.load_data()` method with the parsed user, resource, and log data.
+    e.  Call the `miner.mine_abac_policy()` method to get the final rules.
+    f.  Print the generated rules to the console in a clear, readable format.
+
+### File Format Information
+Based on the provided format descriptions, your script should handle these specific formats:
+
+**User Data Format:**
+{user_format}
+
+**Object/Resource Data Format:**
+{object_format}
+
+**Log Data Format:**
+{log_format}
+
+### CRITICAL CONTEXT: The `ABACPolicyMiner` and `ABACRule` Classes
+
+The following Python code for `ABACRule` and `ABACPolicyMiner` is provided. Your generated script MUST be fully compatible with these classes.
+
+```python
+from typing import Dict, Set, List, Tuple, Optional
+from collections import defaultdict
+import copy
+
+class ABACRule:
+    def __init__(self, user_expr: Dict[str, Set[str]], resource_expr: Dict[str, Set[str]],
+                 operations: Set[str], constraints: Set[str]):
+        self.user_expr = user_expr          # UAE: attribute -> set of values
+        self.resource_expr = resource_expr  # RAE: attribute -> set of values
+        self.operations = operations        # Set of operations
+        self.constraints = constraints      # Set of constraint strings
+
+    def wsc(self) -> int:
+        """Weighted Structural Complexity"""
+        complexity = 0
+        # Count atomic values in user expression
+        for attr_vals in self.user_expr.values():
+            complexity += len(attr_vals)
+        # Count atomic values in resource expression
+        for attr_vals in self.resource_expr.values():
+            complexity += len(attr_vals)
+        # Count operations and constraints
+        complexity += len(self.operations) + len(self.constraints)
+        return complexity
+
+    def __str__(self):
+        return f"⟨{{self.user_expr}}, {{self.resource_expr}}, {{self.operations}}, {{self.constraints}}⟩"
+
+class ABACPolicyMiner:
+    """Enhanced ABAC Policy Miner with research-based improvements."""
+    
+    def __init__(self):
+        self.users: Set[str] = set()
+        self.resources: Set[str] = set()
+        self.operations: Set[str] = set()
+        self.user_attributes: Dict[str, Set[str]] = {{}}
+        self.resource_attributes: Dict[str, Set[str]] = {{}}
+        self.du: Dict[Tuple[str, str], str] = {{}}
+        self.dr: Dict[Tuple[str, str], str] = {{}}
+        self.UP: Set[Tuple[str, str, str]] = set()
+        self.freq: Dict[Tuple[str, str, str], float] = {{}}
+        
+        # Enhanced metrics for better rule generation
+        self.attribute_frequency: Dict[str, int] = defaultdict(int)
+        self.pattern_frequency: Dict[Tuple[str, str], int] = defaultdict(int)
+        self.functional_dependencies: Dict[Tuple[str, str], Set[str]] = defaultdict(set)
+
+    def load_data(self, users_data: Dict[str, Dict[str, str]],
+                  resources_data: Dict[str, Dict[str, str]],
+                  logs: List[Dict]):
+        """Enhanced data loading with pattern and dependency analysis."""
+        # Load user data
+        for user, attrs in users_data.items():
+            self.users.add(user)
+            for attr, value in attrs.items():
+                self.du[(user, attr)] = value
+                if attr not in self.user_attributes:
+                    self.user_attributes[attr] = set()
+                self.user_attributes[attr].add(value)
+                self.attribute_frequency[f"user_{{attr}}_{{value}}"] += 1
+
+        # Load resource data
+        for resource, attrs in resources_data.items():
+            self.resources.add(resource)
+            for attr, value in attrs.items():
+                self.dr[(resource, attr)] = value
+                if attr not in self.resource_attributes:
+                    self.resource_attributes[attr] = set()
+                self.resource_attributes[attr].add(value)
+                self.attribute_frequency[f"resource_{{attr}}_{{value}}"] += 1
+
+        # Process logs with enhanced pattern analysis
+        log_counts = defaultdict(int)
+        total_entries = 0
+
+        for entry in logs:
+            if entry.get('decision', '').lower() == 'allow':
+                user = entry['user_name']
+                resource = entry['object_name']
+                operation = entry['action']
+
+                self.operations.add(operation)
+                log_counts[(user, resource, operation)] += 1
+                total_entries += 1
+                
+                # Track patterns for better rule generation
+                user_dept = self.du.get((user, 'department'), '')
+                user_desig = self.du.get((user, 'designation'), '')
+                res_type = self.dr.get((resource, 'type'), '')
+                res_sens = self.dr.get((resource, 'sensitivity'), '')
+                
+                self.pattern_frequency[(user_dept, res_type)] += 1
+                self.pattern_frequency[(user_desig, res_sens)] += 1
+                
+                # Track functional dependencies
+                self.functional_dependencies[(user_dept, res_type)].add(operation)
+
+        self.UP = set(log_counts.keys())
+        self.freq = {{k: v/total_entries for k, v in log_counts.items()}}
+
+    def rule_quality(self, rule: ABACRule, uncovered_UP: Set[Tuple[str, str, str]]) -> float:
+        """
+        Enhanced rule quality metric based on research findings:
+        - Coverage ratio (35%)
+        - True positive ratio (25%) 
+        - Specificity score (15%)
+        - Pattern frequency bonus (15%)
+        - Constraint effectiveness (5%)
+        - Over-assignment penalty (5%)
+        """
+        covered = self.compute_rule_coverage(rule) & uncovered_UP
+        rule_coverage = self.compute_rule_coverage(rule)
+        over_assignments = rule_coverage - self.UP
+
+        if len(rule_coverage) == 0:
+            return 0.0
+
+        # Coverage metrics
+        coverage_ratio = len(covered) / max(len(uncovered_UP), 1)
+        true_positive_ratio = len(rule_coverage & self.UP) / max(len(rule_coverage), 1)
+        
+        # Specificity metrics
+        specificity_score = 1.0 / max(rule.wsc(), 1)
+        
+        # Pattern frequency bonus (based on association rule mining)
+        pattern_bonus = 0.0
+        for u_attr, u_values in rule.user_expr.items():
+            for r_attr, r_values in rule.resource_expr.items():
+                for u_val in u_values:
+                    for r_val in r_values:
+                        pattern_key = (u_val, r_val)
+                        if pattern_key in self.pattern_frequency:
+                            pattern_bonus += min(self.pattern_frequency[pattern_key] / 10.0, 1.0)
+        
+        # Constraint effectiveness
+        constraint_bonus = len(rule.constraints) * 0.1
+        
+        # Over-assignment penalty
+        over_assignment_penalty = len(over_assignments) / max(len(rule_coverage), 1)
+        
+        # Wildcard penalty (rules that are too general)
+        wildcard_penalty = 0.0
+        total_attributes = len(self.user_attributes) + len(self.resource_attributes)
+        if total_attributes > 0:
+            expressed_ratio = (len(rule.user_expr) + len(rule.resource_expr)) / total_attributes
+            if expressed_ratio < 0.1:  # Too few attributes expressed
+                wildcard_penalty = 0.3
+            elif expressed_ratio > 0.9:  # Too many attributes (overfitting)
+                wildcard_penalty = 0.1
+
+        # Weighted quality score
+        quality = (
+            coverage_ratio * 0.35 +           # Primary: coverage of uncovered permissions
+            true_positive_ratio * 0.25 +     # Secondary: accuracy
+            specificity_score * 0.15 +       # Tertiary: rule specificity
+            pattern_bonus * 0.15 +           # Pattern frequency bonus
+            constraint_bonus * 0.05 +        # Constraint effectiveness
+            (1 - over_assignment_penalty) * 0.05  # Over-assignment penalty
+        ) - wildcard_penalty
+
+        return max(0.0, quality)
+
+    def compute_rule_coverage(self, rule: ABACRule) -> Set[Tuple[str, str, str]]:
+        """Compute which permissions are covered by this rule."""
+        covered = set()
+        for user in self.users:
+            for resource in self.resources:
+                for operation in self.operations:
+                    if self.satisfies_rule(user, resource, operation, rule):
+                        covered.add((user, resource, operation))
+        return covered
+
+    def satisfies_rule(self, user: str, resource: str, operation: str, rule: ABACRule) -> bool:
+        """Check if a permission satisfies the rule."""
+        # Check user attribute expression
+        for attr, values in rule.user_expr.items():
+            if (user, attr) in self.du:
+                if self.du[(user, attr)] not in values:
+                    return False
+            else:
+                return False
+
+        # Check resource attribute expression
+        for attr, values in rule.resource_expr.items():
+            if (resource, attr) in self.dr:
+                if self.dr[(resource, attr)] not in values:
+                    return False
+            else:
+                return False
+
+        # Check operations
+        if operation not in rule.operations:
+            return False
+
+        # Check constraints
+        for constraint in rule.constraints:
+            if not self.satisfies_constraint(user, resource, constraint):
+                return False
+
+        return True
+
+    def satisfies_constraint(self, user: str, resource: str, constraint: str) -> bool:
+        """Check constraint satisfaction."""
+        if " = " in constraint:
+            u_attr, r_attr = constraint.split(" = ")
+            return (self.du.get((user, u_attr)) == self.dr.get((resource, r_attr)))
+        return True
+
+    def mine_abac_policy(self) -> List[ABACRule]:
+        """
+        Enhanced policy mining with multiple phases:
+        1. Pattern-based rule generation
+        2. Functional dependency discovery
+        3. Association rule mining
+        4. Individual permission coverage
+        """
+        rules = []
+        uncovered_UP = set(self.UP)
+        
+        print(f"Starting enhanced policy mining with {{len(uncovered_UP)}} uncovered permissions")
+
+        # Phase 1: Pattern-based rule generation
+        print("Phase 1: Pattern-based rule generation")
+        pattern_rules = self.generate_pattern_based_rules(uncovered_UP)
+        rules.extend(pattern_rules)
+        
+        # Phase 2: Functional dependency discovery (ABAC-SRM approach)
+        print("Phase 2: Functional dependency discovery")
+        fd_rules = self.generate_functional_dependency_rules(uncovered_UP)
+        rules.extend(fd_rules)
+        
+        # Phase 3: Association rule mining
+        print("Phase 3: Association rule mining")
+        assoc_rules = self.generate_association_rules(uncovered_UP)
+        rules.extend(assoc_rules)
+        
+        # Phase 4: Individual permission coverage
+        if uncovered_UP:
+            print(f"Phase 4: Individual coverage for {{len(uncovered_UP)}} remaining permissions")
+            individual_rules = self.generate_individual_rules(uncovered_UP)
+            rules.extend(individual_rules)
+
+        # Enhanced post-processing
+        print("Post-processing: Merging, simplifying, and selecting rules")
+        self.merge_rules(rules)
+        self.simplify_rules(rules)
+        final_rules = self.select_quality_rules(rules)
+
+        print(f"Enhanced policy mining complete: {{len(final_rules)}} final rules")
+        return final_rules
+
+    def generate_pattern_based_rules(self, uncovered_UP: Set[Tuple[str, str, str]]) -> List[ABACRule]:
+        """Generate rules based on frequent patterns."""
+        rules = []
+        max_iterations = min(len(uncovered_UP) * 2, 200)
+        iteration = 0
+        
+        while uncovered_UP and iteration < max_iterations:
+            iteration += 1
+            
+            # Select best seed based on pattern frequency
+            seed_tuple = self.select_pattern_based_seed(uncovered_UP)
+            if not seed_tuple:
+                break
+                
+            u, r, o = seed_tuple
+            cc = self.candidate_constraints(u, r)
+            
+            # Generate rules for similar users, resources, and operations
+            su = self.find_similar_users_pattern(u, r, o, cc)
+            if len(su) >= 1:
+                rule = self.create_rule(su, {{r}}, {{o}}, cc)
+                if rule:
+                    rules.append(rule)
+                    covered = self.compute_rule_coverage(rule) & uncovered_UP
+                    uncovered_UP.difference_update(covered)
+            
+            uncovered_UP.discard(seed_tuple)
+        
+        return rules
+
+    def generate_functional_dependency_rules(self, uncovered_UP: Set[Tuple[str, str, str]]) -> List[ABACRule]:
+        """Generate rules based on functional dependencies (ABAC-SRM approach)."""
+        rules = []
+        
+        # Find functional dependencies
+        for (dept, res_type), operations in self.functional_dependencies.items():
+            if len(operations) >= 2:  # Multiple operations for same pattern
+                # Find users and resources matching this pattern
+                matching_users = {{u for u in self.users if self.du.get((u, 'department')) == dept}}
+                matching_resources = {{r for r in self.resources if self.dr.get((r, 'type')) == res_type}}
+                
+                if matching_users and matching_resources:
+                    rule = self.create_rule(matching_users, matching_resources, operations, set())
+                    if rule:
+                        rules.append(rule)
+        
+        return rules
+
+    def generate_association_rules(self, uncovered_UP: Set[Tuple[str, str, str]]) -> List[ABACRule]:
+        """Generate rules using association rule mining techniques."""
+        rules = []
+        
+        # Find frequent itemsets
+        frequent_patterns = self.find_frequent_patterns()
+        
+        for pattern, support in frequent_patterns.items():
+            if support >= 3:  # Minimum support threshold
+                users, resources, operations = self.extract_pattern_components(pattern)
+                if users and resources and operations:
+                    rule = self.create_rule(users, resources, operations, set())
+                    if rule:
+                        rules.append(rule)
+        
+        return rules
+
+    def generate_individual_rules(self, uncovered_UP: Set[Tuple[str, str, str]]) -> List[ABACRule]:
+        """Generate individual rules for remaining permissions."""
+        rules = []
+        
+        for u, r, o in list(uncovered_UP):
+            user_expr = self.compute_UAE({{u}})
+            resource_expr = self.compute_RAE({{r}})
+            cc = self.candidate_constraints(u, r)
+            
+            rule = ABACRule(user_expr, resource_expr, {{o}}, cc)
+            rules.append(rule)
+        
+        return rules
+
+    def create_rule(self, users: Set[str], resources: Set[str], operations: Set[str], constraints: Set[str]) -> Optional[ABACRule]:
+        """Create a rule from components."""
+        user_expr = self.compute_UAE(users)
+        resource_expr = self.compute_RAE(resources)
+        
+        if not user_expr or not resource_expr:
+            return None
+            
+        return ABACRule(user_expr, resource_expr, operations, constraints)
+
+    def compute_UAE(self, users_subset: Set[str]) -> Dict[str, Set[str]]:
+        """Compute User Attribute Expression."""
+        if not users_subset:
+            return {{}}
+        
+        uae = {{}}
+        for attr in self.user_attributes:
+            values = set()
+            for user in users_subset:
+                if (user, attr) in self.du:
+                    values.add(self.du[(user, attr)])
+            if values:
+                uae[attr] = values
+        return uae
+
+    def compute_RAE(self, resources_subset: Set[str]) -> Dict[str, Set[str]]:
+        """Compute Resource Attribute Expression."""
+        if not resources_subset:
+            return {{}}
+        
+        rae = {{}}
+        for attr in self.resource_attributes:
+            values = set()
+            for resource in resources_subset:
+                if (resource, attr) in self.dr:
+                    values.add(self.dr[(resource, attr)])
+            if values:
+                rae[attr] = values
+        return rae
+
+    def candidate_constraints(self, user: str, resource: str) -> Set[str]:
+        """Find candidate constraints."""
+        constraints = set()
+        
+        # Equality constraints
+        for u_attr in self.user_attributes:
+            for r_attr in self.resource_attributes:
+                if ((user, u_attr) in self.du and (resource, r_attr) in self.dr and
+                    self.du[(user, u_attr)] == self.dr[(resource, r_attr)]):
+                    constraints.add(f"{{u_attr}} = {{r_attr}}")
+        
+        return constraints
+
+    def select_pattern_based_seed(self, uncovered_UP: Set[Tuple[str, str, str]]) -> Optional[Tuple[str, str, str]]:
+        """Select seed based on pattern frequency."""
+        best_seed = None
+        best_score = -1
+        
+        for u, r, o in uncovered_UP:
+            score = 0
+            
+            # Pattern frequency score
+            user_dept = self.du.get((u, 'department'), '')
+            res_type = self.dr.get((r, 'type'), '')
+            pattern_score = self.pattern_frequency.get((user_dept, res_type), 0)
+            
+            # Similarity score
+            similar_users = sum(1 for u2 in self.users if (u2, r, o) in self.UP)
+            similar_ops = sum(1 for op2 in self.operations if (u, r, op2) in self.UP)
+            similar_resources = sum(1 for r2 in self.resources if (u, r2, o) in self.UP)
+            
+            score = pattern_score + similar_users + similar_ops + similar_resources
+            
+            if score > best_score:
+                best_score = score
+                best_seed = (u, r, o)
+        
+        return best_seed
+
+    def find_similar_users_pattern(self, u: str, r: str, o: str, cc: Set[str]) -> Set[str]:
+        """Find similar users based on patterns."""
+        similar_users = {{u}}
+        
+        for u_prime in self.users:
+            if u_prime != u and (u_prime, r, o) in self.UP:
+                cc_prime = self.candidate_constraints(u_prime, r)
+                if cc == cc_prime or len(cc & cc_prime) > 0:
+                    similar_users.add(u_prime)
+        
+        return similar_users
+
+    def find_frequent_patterns(self) -> Dict[Tuple[str, str, str], int]:
+        """Find frequent patterns using association rule mining."""
+        patterns = defaultdict(int)
+        
+        for u, r, o in self.UP:
+            user_dept = self.du.get((u, 'department'), '')
+            user_desig = self.du.get((u, 'designation'), '')
+            res_type = self.dr.get((r, 'type'), '')
+            res_sens = self.dr.get((r, 'sensitivity'), '')
+            
+            # Create pattern combinations
+            patterns[(user_dept, res_type, o)] += 1
+            patterns[(user_desig, res_sens, o)] += 1
+            patterns[(user_dept, user_desig, o)] += 1
+        
+        return dict(patterns)
+
+    def extract_pattern_components(self, pattern: Tuple[str, str, str]) -> Tuple[Set[str], Set[str], Set[str]]:
+        """Extract users, resources, and operations from pattern."""
+        attr1, attr2, operation = pattern
+        
+        users = set()
+        resources = set()
+        operations = {{operation}}
+        
+        # Determine which attributes correspond to users vs resources
+        if attr1 in self.user_attributes:
+            users = {{u for u in self.users if self.du.get((u, attr1)) == attr1}}
+        if attr2 in self.resource_attributes:
+            resources = {{r for r in self.resources if self.dr.get((r, attr2)) == attr2}}
+        
+        return users, resources, operations
+
+    def merge_rules(self, rules: List[ABACRule]):
+        """Enhanced rule merging."""
+        initial_count = len(rules)
+        merged = True
+        
+        while merged and len(rules) > 1:
+            merged = False
+            for i in range(len(rules) - 1, -1, -1):
+                for j in range(i - 1, -1, -1):
+                    if self.can_merge_rules(rules[i], rules[j]):
+                        merged_rule = self.merge_two_rules(rules[i], rules[j])
+                        if self.is_merge_beneficial(rules[i], rules[j], merged_rule):
+                            rules[j] = merged_rule
+                            rules.pop(i)
+                            merged = True
+                            break
+                if merged:
+                    break
+        
+        print(f"Enhanced merging: {{initial_count - len(rules)}} rules merged")
+
+    def can_merge_rules(self, rule1: ABACRule, rule2: ABACRule) -> bool:
+        """Check if rules can be merged."""
+        return (rule1.operations == rule2.operations and 
+                rule1.constraints == rule2.constraints)
+
+    def merge_two_rules(self, rule1: ABACRule, rule2: ABACRule) -> ABACRule:
+        """Merge two compatible rules."""
+        merged_user_expr = {{}}
+        for attr in set(rule1.user_expr.keys()) | set(rule2.user_expr.keys()):
+            vals = rule1.user_expr.get(attr, set()) | rule2.user_expr.get(attr, set())
+            if vals:
+                merged_user_expr[attr] = vals
+        
+        merged_resource_expr = {{}}
+        for attr in set(rule1.resource_expr.keys()) | set(rule2.resource_expr.keys()):
+            vals = rule1.resource_expr.get(attr, set()) | rule2.resource_expr.get(attr, set())
+            if vals:
+                merged_resource_expr[attr] = vals
+        
+        return ABACRule(merged_user_expr, merged_resource_expr, rule1.operations, rule1.constraints)
+
+    def is_merge_beneficial(self, rule1: ABACRule, rule2: ABACRule, merged_rule: ABACRule) -> bool:
+        """Check if merging is beneficial."""
+        coverage1 = self.compute_rule_coverage(rule1) & self.UP
+        coverage2 = self.compute_rule_coverage(rule2) & self.UP
+        coverage_merged = self.compute_rule_coverage(merged_rule) & self.UP
+        
+        true_positives_union = coverage1 | coverage2
+        false_positives_merged = self.compute_rule_coverage(merged_rule) - self.UP
+        
+        return (coverage_merged.issuperset(true_positives_union) and 
+                len(false_positives_merged) <= len(true_positives_union) + 3)
+
+    def simplify_rules(self, rules: List[ABACRule]):
+        """Enhanced rule simplification."""
+        if not rules:
+            return
+
+        initial_count = len(rules)
+        filtered_rules = []
+        
+        for rule in rules:
+            coverage = self.compute_rule_coverage(rule)
+            true_positives = coverage & self.UP
+            false_positives = coverage - self.UP
+            
+            # Skip rules with no true positives
+            if not true_positives:
+                continue
+            
+            # Skip rules with too many false positives
+            if len(false_positives) > len(true_positives) * 2:
+                continue
+            
+            # Skip overly general rules
+            if self.UP and len(true_positives) / len(self.UP) > 0.9:
+                continue
+            
+            # Skip rules with too few attributes
+            total_attrs = len(self.user_attributes) + len(self.resource_attributes)
+            if total_attrs > 0:
+                expressed_ratio = (len(rule.user_expr) + len(rule.resource_expr)) / total_attrs
+                if expressed_ratio < 0.05:  # Less than 5% attributes expressed
+                    continue
+            
+            filtered_rules.append(rule)
+        
+        rules.clear()
+        rules.extend(filtered_rules)
+        print(f"Enhanced simplification: {{initial_count - len(rules)}} rules removed")
+
+    def select_quality_rules(self, rules: List[ABACRule]) -> List[ABACRule]:
+        """Enhanced rule selection with coverage optimization."""
+        if not rules:
+            return rules
+
+        # Calculate quality scores
+        rule_scores = []
+        for rule in rules:
+            quality = self.rule_quality(rule, set(self.UP))
+            coverage = self.compute_rule_coverage(rule) & self.UP
+            rule_scores.append((rule, quality, len(coverage)))
+
+        # Sort by quality
+        rule_scores.sort(key=lambda x: x[1], reverse=True)
+
+        selected_rules = []
+        covered_permissions = set()
+        remaining_permissions = set(self.UP)
+
+        # Greedy selection with coverage optimization
+        for rule, quality, coverage_size in rule_scores:
+            if quality < 0.1:  # Skip low quality rules
+                continue
+            
+            rule_coverage = self.compute_rule_coverage(rule) & self.UP
+            new_coverage = rule_coverage - covered_permissions
+            
+            # Add rule if it provides new coverage
+            if len(new_coverage) > 0:
+                selected_rules.append(rule)
+                covered_permissions.update(rule_coverage)
+                remaining_permissions -= rule_coverage
+                
+                # Stop if we have high coverage
+                if len(covered_permissions) / len(self.UP) >= 0.95:
+                    break
+
+        # Add fallback rules for remaining permissions
+        if remaining_permissions and len(remaining_permissions) / len(self.UP) > 0.05:
+            print(f"Adding fallback rules for {{len(remaining_permissions)}} remaining permissions")
+            for rule, quality, coverage_size in rule_scores:
+                if rule not in selected_rules and quality > 0.05:
+                    selected_rules.append(rule)
+                    if len(selected_rules) >= 20:  # Limit total rules
+                        break
+
+        print(f"Enhanced selection: {{len(selected_rules)}} rules selected")
+        if len(self.UP) > 0:
+            print(f"Coverage: {{len(covered_permissions)}}/{{len(self.UP)}} permissions ({{len(covered_permissions)/len(self.UP)*100:.1f}}%)")
+        
+        return selected_rules
+
+def read_file_content(filename: str) -> str:
+    """Reads the entire content of a file and handles potential errors."""
+    try:
+        with open(filename, 'r') as f:
+            return f.read()
+    except FileNotFoundError:
+        print(f"Error: The file '{{filename}}' was not found. Please ensure it is in the correct directory.")
+        return "" # Return empty string if file is not found
+
+def main():
+    """Main function to orchestrate the policy mining process."""
+    # 1. Define fixed filenames
+    users_filename = "users.txt"
+    resources_filename = "resources.txt"
+    logs_filename = "logs.txt"
+
+    # 2. Read the content of each file
+    print("--- Step 1: Reading data files ---")
+    user_file_content = read_file_content(users_filename)
+    resource_file_content = read_file_content(resources_filename)
+    log_file_content = read_file_content(logs_filename)
+
+    if not all([user_file_content, resource_file_content, log_file_content]):
+        print("Aborting due to missing file(s).")
+        return
+
+    # 3. Parse the raw data using the generated parser
+    print("\\n--- Step 2: Parsing raw data ---")
+    users_data = parse_data_file(user_file_content, file_type='user')
+    resources_data = parse_data_file(resource_file_content, file_type='resource')
+    logs = parse_data_file(log_file_content, file_type='log')
+    print("Parsing complete.")
+
+    # 4. Instantiate the miner and run the algorithm
+    print("\\n--- Step 3: Running the ABAC Policy Miner ---")
+    miner = ABACPolicyMiner()
+    miner.load_data(users_data, resources_data, logs)
+    final_rules = miner.mine_abac_policy()
+    print("Policy mining complete.")
+
+    # 5. Print the final results
+    print(f"\\n--- Generated {{len(final_rules)}} ABAC Rules ---")
+    if not final_rules:
+        print("No rules were generated based on the provided logs.")
+    else:
+        for i, rule in enumerate(final_rules, 1):
+            print(f"\\nRule {{i}}: {{rule}}")
+            print(f"WSC (Complexity): {{rule.wsc()}}")
+
+if __name__ == "__main__":
+    main()
+
+**Final Instruction**
+Provide ONLY the complete, self-contained Python code for the parse_data_file function, including necessary imports like typing. Do not include any example usage or explanations outside of the code's docstrings and comments.
+'''

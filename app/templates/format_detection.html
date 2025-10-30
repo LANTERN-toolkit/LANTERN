@@ -1,0 +1,401 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    File Format Detection - {{ workflow.title() }}
+{% endblock %}
+
+{% block content %}
+    <h1>File Format Detection</h1>
+    <p>Please upload sample files or describe the format of your data files for {{ workflow }} workflow.</p>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="format-detection-container">
+        <div class="format-options">
+            <h3>Choose Detection Method</h3>
+            <div class="detection-tabs">
+                <button class="tab-button active" onclick="showTab('upload')">Upload Sample Files</button>
+                <button class="tab-button" onclick="showTab('describe')">Describe Format</button>
+            </div>
+        </div>
+        
+        <!-- Upload Sample Files Tab -->
+        <div id="upload-tab" class="tab-content active">
+            <form method="post" enctype="multipart/form-data" class="format-form">
+                <input type="hidden" name="workflow" value="{{ workflow }}">
+                <input type="hidden" name="detection_method" value="upload">
+                
+                <!-- Model Selection -->
+                <div class="model-selection-area">
+                    <h4>Select AI Model</h4>
+                    <p style="text-align: left; margin-bottom: 15px;">Choose the engine for script generation. More powerful models may yield better results but can be slower.</p>
+                    <select name="model_choice" class="model-select">
+                        <optgroup label="Gemini 2.5 Generation">
+                            <option value="gemini-2.5-pro">Gemini 2.5 Pro (State-of-the-art, complex reasoning)</option>
+                            <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (Fast, 1M context)</option>
+                            <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (Smallest, most cost-effective)</option>
+                        </optgroup>
+                        <optgroup label="Gemini 2.0 Generation">
+                            <option value="gemini-2.0-flash">Gemini 2.0 Flash (Balanced, multimodal)</option>
+                            <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite (Legacy cost-effective)</option>
+                        </optgroup>
+                        <optgroup label="Gemini 1.5 Generation">
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Highest intelligence, 2M context)</option>
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fastest 1.5 model, for diverse tasks)</option>
+                        </optgroup>
+                    </select>
+                </div>
+                
+                <div class="file-upload-group">
+                    <h4>Upload Sample Files</h4>
+                    <p>Upload small sample files (first 10-20 lines) to automatically detect the format.</p>
+                    
+                    <div class="file-upload">
+                        <label for="user_sample">User Data Sample</label>
+                        <input type="file" id="user_sample" name="user_sample" accept=".txt" required>
+                        <small>Sample of your users.txt file</small>
+                    </div>
+                    
+                    <div class="file-upload">
+                        <label for="object_sample">Object Data Sample</label>
+                        <input type="file" id="object_sample" name="object_sample" accept=".txt" required>
+                        <small>Sample of your objects.txt or resources.txt file</small>
+                    </div>
+                    
+                    <div class="file-upload">
+                        <label for="log_sample">Log Data Sample</label>
+                        <input type="file" id="log_sample" name="log_sample" accept=".txt" required>
+                        <small>Sample of your logs.txt file</small>
+                    </div>
+                </div>
+                
+                <button type="submit" class="detect-button">Detect Format & Generate Script</button>
+            </form>
+        </div>
+        
+        <!-- Describe Format Tab -->
+        <div id="describe-tab" class="tab-content">
+            <form method="post" class="format-form">
+                <input type="hidden" name="workflow" value="{{ workflow }}">
+                <input type="hidden" name="detection_method" value="describe">
+                
+                <!-- Model Selection -->
+                <div class="model-selection-area">
+                    <h4>Select AI Model</h4>
+                    <p style="text-align: left; margin-bottom: 15px;">Choose the engine for script generation. More powerful models may yield better results but can be slower.</p>
+                    <select name="model_choice" class="model-select">
+                        <optgroup label="Gemini 2.5 Generation">
+                            <option value="gemini-2.5-pro">Gemini 2.5 Pro (State-of-the-art, complex reasoning)</option>
+                            <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (Fast, 1M context)</option>
+                            <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (Smallest, most cost-effective)</option>
+                        </optgroup>
+                        <optgroup label="Gemini 2.0 Generation">
+                            <option value="gemini-2.0-flash">Gemini 2.0 Flash (Balanced, multimodal)</option>
+                            <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite (Legacy cost-effective)</option>
+                        </optgroup>
+                        <optgroup label="Gemini 1.5 Generation">
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Highest intelligence, 2M context)</option>
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fastest 1.5 model, for diverse tasks)</option>
+                        </optgroup>
+                    </select>
+                </div>
+                
+                <div class="format-description-group">
+                    <h4>Describe Your File Formats</h4>
+                    <p>Provide details about how your data files are structured.</p>
+                    
+                    <div class="format-field">
+                        <label for="user_format">User Data Format</label>
+                        <textarea id="user_format" name="user_format" rows="3" 
+                                  placeholder="e.g., &lt;username department:Finance designation:Analyst&gt;&#10;&lt;alice department:Sales designation:Manager&gt;" required></textarea>
+                        <small>Describe the format of your user data file</small>
+                    </div>
+                    
+                    <div class="format-field">
+                        <label for="object_format">Object Data Format</label>
+                        <textarea id="object_format" name="object_format" rows="3" 
+                                  placeholder="e.g., &lt;filename type:Financial sensitivity:High&gt;&#10;&lt;budget.xlsx type:Financial sensitivity:Low&gt;" required></textarea>
+                        <small>Describe the format of your object/resource data file</small>
+                    </div>
+                    
+                    <div class="format-field">
+                        <label for="log_format">Log Data Format</label>
+                        <textarea id="log_format" name="log_format" rows="3" 
+                                  placeholder="e.g., &lt;username filename action timestamp decision&gt;&#10;&lt;alice budget.xlsx read 09:10 Allow&gt;" required></textarea>
+                        <small>Describe the format of your log data file</small>
+                    </div>
+                </div>
+                
+                <button type="submit" class="detect-button">Generate Script</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="format-examples">
+        <h3>Common Format Examples</h3>
+        <div class="example-tabs">
+            <button class="example-tab active" onclick="showExample('brackets')">Bracket Format</button>
+            <button class="example-tab" onclick="showExample('csv')">CSV Format</button>
+            <button class="example-tab" onclick="showExample('space')">Space Separated</button>
+        </div>
+        
+        <div id="brackets-example" class="example-content active">
+            <h4>Bracket Format (Default)</h4>
+            <pre><code>Users: &lt;alice department:Finance designation:Analyst&gt;
+Objects: &lt;budget.xlsx type:Financial sensitivity:High&gt;
+Logs: &lt;alice budget.xlsx read 09:10 Allow&gt;</code></pre>
+        </div>
+        
+        <div id="csv-example" class="example-content">
+            <h4>CSV Format</h4>
+            <pre><code>Users: alice,Finance,Analyst
+Objects: budget.xlsx,Financial,High
+Logs: alice,budget.xlsx,read,09:10,Allow</code></pre>
+        </div>
+        
+        <div id="space-example" class="example-content">
+            <h4>Space Separated</h4>
+            <pre><code>Users: alice Finance Analyst
+Objects: budget.xlsx Financial High
+Logs: alice budget.xlsx read 09:10 Allow</code></pre>
+        </div>
+    </div>
+    
+    <a href="{{ url_for('main.start') }}" class="back-link">← Back to Workflow Selection</a>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Remove active class from all buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    document.getElementById(tabName + '-tab').classList.add('active');
+    event.target.classList.add('active');
+}
+
+function showExample(exampleName) {
+    // Hide all example contents
+    document.querySelectorAll('.example-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Remove active class from all example tabs
+    document.querySelectorAll('.example-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Show selected example
+    document.getElementById(exampleName + '-example').classList.add('active');
+    event.target.classList.add('active');
+}
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+.format-detection-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.detection-tabs {
+    display: flex;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.tab-button {
+    background: none;
+    border: none;
+    padding: 12px 24px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.tab-button.active {
+    border-bottom-color: #007bff;
+    color: #007bff;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.format-form {
+    background: #f8f9fa;
+    padding: 2rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+}
+
+.file-upload-group, .format-description-group {
+    margin-bottom: 1.5rem;
+}
+
+.file-upload, .format-field {
+    margin-bottom: 1.5rem;
+}
+
+.file-upload label, .format-field label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #495057;
+}
+
+.file-upload input[type="file"], .format-field textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.format-field textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.file-upload small, .format-field small {
+    display: block;
+    margin-top: 0.25rem;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.detect-button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.detect-button:hover {
+    background: #0056b3;
+}
+
+.format-examples {
+    background: #e9ecef;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-top: 2rem;
+}
+
+.example-tabs {
+    display: flex;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #ced4da;
+}
+
+.example-tab {
+    background: none;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.example-tab.active {
+    border-bottom-color: #007bff;
+    color: #007bff;
+}
+
+.example-content {
+    display: none;
+}
+
+.example-content.active {
+    display: block;
+}
+
+.example-content pre {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.875rem;
+}
+
+.back-link {
+    display: inline-block;
+    margin-top: 2rem;
+    color: #007bff;
+    text-decoration: none;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.model-selection-area {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e9ecef;
+}
+
+.model-selection-area h4 {
+    margin: 0 0 0.5rem 0;
+    color: #495057;
+}
+
+.model-select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    background: white;
+}
+
+.alert {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+</style>
+{% endblock %}

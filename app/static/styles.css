@@ -1,0 +1,248 @@
+/* --- Google Font Import --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+/* --- General Body & Background Styling --- */
+body {
+    font-family: 'Poppins', sans-serif;
+    line-height: 1.6;
+    color: #333;
+    margin: 0;
+    /* The background image */
+    background-image: url('/static/images/background1.jpg'); /* <-- MAKE SURE YOUR IMAGE NAME MATCHES */
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed; /* Keeps the background stationary on scroll */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Aligns container to the top */
+    min-height: 100vh;
+    padding: 40px 20px;
+    box-sizing: border-box;
+}
+
+/* Adds a dark overlay to the background to make text more readable */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(14, 22, 42, 0.7); /* Dark blue overlay */
+    z-index: -1;
+}
+
+/* --- Main Content Container --- */
+.container {
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 40px;
+    /* Frosted glass effect */
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* --- Typography & Headers --- */
+h1, h2, h3 {
+    color: #0d1b3e; /* Dark navy blue */
+    font-weight: 600;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 2.5em;
+}
+
+p {
+    color: #555;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+hr {
+    border: none;
+    height: 1px;
+    background-color: #ddd;
+    margin: 30px 0;
+}
+
+/* --- Forms, Buttons, and Inputs --- */
+.upload-form, .download-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.file-upload {
+    padding: 15px;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    text-align: center;
+    transition: border-color 0.3s, background-color 0.3s;
+}
+
+.file-upload:hover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.file-upload label {
+    font-weight: 600;
+    color: #007bff;
+}
+
+/* All buttons, including submit and download */
+button {
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+}
+
+.download-button {
+    background: linear-gradient(90deg, #28a745, #218838);
+}
+
+.download-button:hover {
+     box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+/* --- Prompt Customization Area --- */
+.prompt-customization-area {
+    background-color: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.prompt-customization-area button {
+    background: #6c757d;
+}
+
+.prompt-customization-area textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    box-sizing: border-box;
+    margin-top: 15px;
+}
+
+/* --- Results and Error Sections --- */
+.results-container {
+    margin-top: 40px;
+}
+
+.verification-results pre, .policy-narrative p {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    white-space: pre-wrap;
+    font-size: 14px;
+    text-align: left;
+}
+
+.error-message {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 5px;
+}
+
+.back-link {
+    display: inline-block;
+    margin-top: 30px;
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+
+.model-selection-area {
+    background-color: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px; /* Adds space between this and the next section */
+}
+
+.model-selection-area h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.model-select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: white;
+    font-family: 'Poppins', sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+
+/* The full-page overlay */
+.loader-overlay {
+    position: fixed; /* Sit on top of the page content */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(14, 22, 42, 0.8); /* Same dark blue as the body overlay, but less transparent */
+    display: flex; /* Use flexbox to center the content */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Make sure it's on top of everything else */
+    flex-direction: column; /* Stack the spinner and text vertically */
+    gap: 20px;
+}
+
+/* The actual spinning circle */
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 6px solid rgba(255, 255, 255, 0.3); /* Light grey border */
+    border-top-color: #ffffff; /* White color for the spinning part */
+    border-radius: 50%;
+    animation: spin 1s linear infinite; /* The animation */
+}
+
+/* The "Thinking..." text */
+.loader-text {
+    color: #ffffff;
+    font-size: 1.2em;
+    font-weight: 600;
+}
+
+/* The animation keyframes for the rotation */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

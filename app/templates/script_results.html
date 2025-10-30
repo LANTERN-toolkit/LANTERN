@@ -1,0 +1,480 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Generated Script - {{ workflow.title() }}
+{% endblock %}
+
+{% block content %}
+    <h1>Generated {{ workflow.title() }} Script</h1>
+    <p>Your Python script has been generated successfully. You can download it or copy the code below.</p>
+    
+    <div class="script-results-container">
+        <div class="script-actions">
+            <button onclick="downloadScript()" class="download-button">Download Script</button>
+            <button onclick="copyToClipboard()" class="copy-button">Copy Clean Code</button>
+            <button onclick="toggleFullscreen()" class="fullscreen-button">Toggle Fullscreen</button>
+        </div>
+        
+        <div class="script-info">
+            <h3>Script Information</h3>
+            <ul>
+                <li><strong>Workflow:</strong> {{ workflow.title() }}</li>
+                <li><strong>Generated:</strong> {{ timestamp }}</li>
+                <li><strong>Lines of Code:</strong> {{ line_count }}</li>
+                <li><strong>Dependencies:</strong> {{ dependencies }}</li>
+            </ul>
+        </div>
+        
+        <div class="script-container">
+            <div class="script-header">
+                <h3>Generated Python Script</h3>
+                <div class="script-controls">
+                    <button onclick="toggleLineNumbers()" class="control-button">Toggle Line Numbers</button>
+                    <small style="color: #6c757d; margin-left: 10px;">Line numbers are for display only - copying/downloading removes them</small>
+                </div>
+            </div>
+            <div class="script-content" id="script-content">
+                <pre><code id="script-code" data-original="{{ script_content }}">{{ script_content }}</code></pre>
+            </div>
+        </div>
+        
+        <div class="usage-instructions">
+            <h3>Usage Instructions</h3>
+            <div class="instruction-steps">
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <div class="step-content">
+                        <h4>Save the Script</h4>
+                        <p>Download the script and save it as <code>{{ script_filename }}</code></p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <div class="step-content">
+                        <h4>Prepare Your Data Files</h4>
+                        <p>Ensure your data files are in the same directory as the script:
+                            <ul>
+                                <li><code>users.txt</code> - User attributes data</li>
+                                <li><code>objects.txt</code> or <code>resources.txt</code> - Object/resource data</li>
+                                <li><code>logs.txt</code> - Access control logs</li>
+                            </ul>
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <div class="step-content">
+                        <h4>Install Dependencies</h4>
+                        <p>Install required Python packages:
+                            <code>pip install {{ dependencies }}</code>
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <div class="step-content">
+                        <h4>Run the Script</h4>
+                        <p>Execute the script: <code>python {{ script_filename }}</code></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="script-features">
+            <h3>Script Features</h3>
+            <div class="features-grid">
+                <div class="feature">
+                    <h4>🔍 Dynamic Format Detection</h4>
+                    <p>Automatically detects file formats and adapts parsing logic accordingly</p>
+                </div>
+                <div class="feature">
+                    <h4>⚡ Efficient Processing</h4>
+                    <p>Handles large datasets with optimized algorithms and memory management</p>
+                </div>
+                <div class="feature">
+                    <h4>🛡️ Error Handling</h4>
+                    <p>Robust error handling with detailed logging and graceful failure recovery</p>
+                </div>
+                <div class="feature">
+                    <h4>📊 Compression Statistics</h4>
+                    <p>Provides detailed statistics on data compression and processing efficiency</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="navigation-actions">
+        <a href="{{ url_for('main.format_detection', workflow=workflow) }}" class="action-button secondary">Generate Another Script</a>
+        <a href="{{ url_for('main.start') }}" class="action-button primary">Back to Workflow Selection</a>
+    </div>
+    
+    <!-- Hidden cleanup link for when user navigates away -->
+    <script>
+        // Clean up temporary files when user navigates away
+        window.addEventListener('beforeunload', function() {
+            // This will be handled by the server-side cleanup
+        });
+    </script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function downloadScript() {
+    const cleanCode = getCleanCode();
+    const blob = new Blob([cleanCode], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '{{ script_filename }}';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+function copyToClipboard() {
+    const cleanCode = getCleanCode();
+    navigator.clipboard.writeText(cleanCode).then(() => {
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        button.style.background = '#28a745';
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.style.background = '';
+        }, 2000);
+    });
+}
+
+function toggleFullscreen() {
+    const container = document.querySelector('.script-container');
+    if (container.classList.contains('fullscreen')) {
+        container.classList.remove('fullscreen');
+        document.exitFullscreen();
+    } else {
+        container.classList.add('fullscreen');
+        container.requestFullscreen();
+    }
+}
+
+function toggleLineNumbers() {
+    const code = document.getElementById('script-code');
+    const isShowingNumbers = code.classList.contains('line-numbers');
+    
+    if (isShowingNumbers) {
+        // Show clean code without line numbers
+        code.textContent = code.getAttribute('data-original');
+        code.classList.remove('line-numbers');
+    } else {
+        // Show code with line numbers
+        const lines = code.textContent.split('\n');
+        const numberedLines = lines.map((line, index) => {
+            const lineNumber = (index + 1).toString().padStart(3, ' ');
+            return `${lineNumber} | ${line}`;
+        });
+        code.textContent = numberedLines.join('\n');
+        code.classList.add('line-numbers');
+    }
+}
+
+// Add line numbers on load (for display only)
+document.addEventListener('DOMContentLoaded', function() {
+    const code = document.getElementById('script-code');
+    const lines = code.textContent.split('\n');
+    const numberedLines = lines.map((line, index) => {
+        const lineNumber = (index + 1).toString().padStart(3, ' ');
+        return `${lineNumber} | ${line}`;
+    });
+    code.textContent = numberedLines.join('\n');
+    code.classList.add('line-numbers');
+});
+
+// Function to get clean code without line numbers for copying
+function getCleanCode() {
+    const code = document.getElementById('script-code');
+    // Get the original clean code from the data attribute
+    return code.getAttribute('data-original') || code.textContent;
+}
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+.script-results-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.script-actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.download-button, .copy-button, .fullscreen-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.download-button {
+    background: #007bff;
+    color: white;
+}
+
+.copy-button {
+    background: #28a745;
+    color: white;
+}
+
+.fullscreen-button {
+    background: #6c757d;
+    color: white;
+}
+
+.download-button:hover, .copy-button:hover, .fullscreen-button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.script-info {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+}
+
+.script-info ul {
+    list-style: none;
+    padding: 0;
+}
+
+.script-info li {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.script-info li:last-child {
+    border-bottom: none;
+}
+
+.script-container {
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    transition: all 0.3s ease;
+}
+
+.script-container.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
+    border-radius: 0;
+    margin: 0;
+}
+
+.script-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: #e9ecef;
+    border-radius: 10px 10px 0 0;
+}
+
+.script-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.control-button {
+    padding: 5px 10px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.script-content {
+    padding: 1.5rem;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.script-content pre {
+    margin: 0;
+    background: #2d3748;
+    color: #e2e8f0;
+    padding: 1rem;
+    border-radius: 5px;
+    overflow-x: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.usage-instructions {
+    background: #e9ecef;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+}
+
+.instruction-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.step {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.step-number {
+    background: #007bff;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.step-content h4 {
+    margin: 0 0 0.5rem 0;
+    color: #495057;
+}
+
+.step-content p {
+    margin: 0;
+    color: #6c757d;
+    line-height: 1.5;
+}
+
+.step-content ul {
+    margin: 0.5rem 0 0 1rem;
+    color: #6c757d;
+}
+
+.step-content code {
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+}
+
+.script-features {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.feature {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.feature h4 {
+    margin: 0 0 0.5rem 0;
+    color: #495057;
+    font-size: 1rem;
+}
+
+.feature p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.navigation-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.action-button {
+    padding: 12px 24px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.action-button.primary {
+    background: #007bff;
+    color: white;
+}
+
+.action-button.secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.action-button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    text-decoration: none;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .script-actions {
+        flex-direction: column;
+    }
+    
+    .script-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .instruction-steps {
+        gap: 1rem;
+    }
+    
+    .step {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .navigation-actions {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}

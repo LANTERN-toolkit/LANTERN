@@ -1,0 +1,104 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    ABAC Policy Generator & Verifier
+{% endblock %}
+
+{% block content %}
+    <h1>ABAC Policy Generator & Verifier</h1>
+    <p>Upload your user attributes, object attributes, and log files to generate and verify a security policy.</p>
+    
+    <hr>
+
+    <!-- Upload Form -->
+    <form method="post" enctype="multipart/form-data" class="upload-form">
+       <!-- Updated Model Selection Dropdown -->
+        <div class="model-selection-area">
+            <h3>Select AI Model</h3>
+            <p style="text-align: left; margin-bottom: 15px;">Choose the engine for policy generation. More powerful models may yield better results but can be slower.</p>
+            <select name="model_choice" class="model-select">
+                <optgroup label="Gemini 2.5 Generation">
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro (State-of-the-art, complex reasoning)</option>
+                    <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (Fast, 1M context)</option>
+                    <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (Smallest, most cost-effective)</option>
+                </optgroup>
+                <optgroup label="Gemini 2.0 Generation">
+                    <option value="gemini-2.0-flash">Gemini 2.0 Flash (Balanced, multimodal)</option>
+                    <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite (Legacy cost-effective)</option>
+                </optgroup>
+                <optgroup label="Gemini 1.5 Generation">
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro (Highest intelligence, 2M context)</option>
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fastest 1.5 model, for diverse tasks)</option>
+                </optgroup>
+            </select>
+        </div>
+
+
+
+        <!-- Prompt Customization Section -->
+        <div class="prompt-customization-area">
+            <h3>Prompt Customization</h3>
+            <p style="text-align: left;">You can provide your own "Rule Extraction Principles" below. If left blank, the default rules will be used.</p>
+            <button type="button" id="toggle-rules-btn">Show Default Rules</button>
+            <div id="default-rules-container" style="display:none;">
+                <h4>Default Rule Extraction Principles</h4>
+                <pre>{{ default_rules }}</pre>
+            </div>
+            <textarea name="custom_rules" rows="8" placeholder="Leave blank to use default rules, or enter your own principles here..."></textarea>
+        </div>
+
+        <div class="file-upload">
+            <label for="user_attributes">Click or Drop User Attributes File</label>
+            <input type="file" id="user_attributes" name="user_attributes" required>
+        </div>
+        <div class="file-upload">
+            <label for="object_attributes">Click or Drop Object Attributes File</label>
+            <input type="file" id="object_attributes" name="object_attributes" required>
+        </div>
+        <div class="file-upload">
+            <label for="logs">Click or Drop Logs File</label>
+            <input type="file" id="logs" name="logs" required>
+        </div>
+        <button type="submit">Generate and Verify Policy</button>
+    </form>
+
+    <!-- Error Display -->
+    {% if error %}
+    <div class="error-message">
+        <h2>An Error Occurred</h2>
+        <p style="text-align: left;">{{ error }}</p>
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <!-- JavaScript for the toggle button -->
+    <script>
+        document.getElementById('toggle-rules-btn').addEventListener('click', function() {
+            const container = document.getElementById('default-rules-container');
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                this.textContent = 'Hide Default Rules';
+            } else {
+                container.style.display = 'none';
+                this.textContent = 'Show Default Rules';
+            }
+        });
+    </script>
+    <!-- ####################################################### -->
+    <!-- ## NEW: JavaScript to show the loader on form submit ## -->
+    <!-- ####################################################### -->
+    <script>
+        // Get the form and the loader element
+        const policyForm = document.querySelector('.upload-form');
+        const loader = document.getElementById('loader');
+        
+        // Add an event listener for the 'submit' event
+        policyForm.addEventListener('submit', function() {
+            // When the form is submitted, show the loader overlay
+            if (loader) {
+                loader.style.display = 'flex';
+            }
+        });
+    </script>
+{% endblock %}

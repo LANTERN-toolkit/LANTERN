@@ -1,0 +1,288 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Natural Language Policy Generator
+{% endblock %}
+
+{% block content %}
+    <h1>Natural Language Policy Generator</h1>
+    <p>Convert your technical ABAC rules into a short, friendly story that anyone can understand.</p>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="form-container">
+        <form method="POST" id="policyForm">
+            <div class="form-group">
+                <label for="rules_text">ABAC Rules (Dictionary Format)</label>
+                <textarea 
+                    id="rules_text" 
+                    name="rules_text" 
+                    rows="15" 
+                    placeholder="Paste your rules here in the format:
+
+Rule 1: ⟨User_Expr: {'designation': {'Manager', 'Coordinator'}}, Resource_Expr: {'sensitivity': {'Medium'}}, Operations: {'write', 'read'}, Constraints: {'department = type'}⟩
+WSC (Complexity): 6
+Approx. True Positive Coverage: 2.89% of total allowed permissions.
+
+Rule 2: ⟨User_Expr: {'designation': {'Manager', 'Coordinator'}}, Resource_Expr: {'sensitivity': {'Medium', 'Low'}}, Operations: {'write'}, Constraints: {'department = type'}⟩
+WSC (Complexity): 6
+Approx. True Positive Coverage: 4.05% of total allowed permissions.
+
+Rule 3: ⟨User_Expr: {'designation': {'Coordinator'}}, Resource_Expr: {'sensitivity': {'Low'}}, Operations: {'write', 'read'}, Constraints: {'department = type'}⟩
+WSC (Complexity): 5
+Approx. True Positive Coverage: 2.89% of total allowed permissions.
+
+Rule 4: ⟨User_Expr: {'designation': {'Manager'}}, Resource_Expr: {'sensitivity': {'High', 'Medium'}}, Operations: {'read'}, Constraints: {'department = type'}⟩
+WSC (Complexity): 5
+Approx. True Positive Coverage: 3.24% of total allowed permissions."
+                    required></textarea>
+                <small class="form-text">Enter your ABAC rules in the technical dictionary format. The system will convert these into a natural language policy that explains the access control rules in simple terms.</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="model_choice">AI Model</label>
+                <select id="model_choice" name="model_choice" class="form-control">
+                    <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (Recommended)</option>
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                </select>
+                <small class="form-text">Choose the AI model for generating the natural language policy.</small>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="generateBtn">
+                    Generate Natural Language Policy
+                </button>
+                <a href="{{ url_for('main.start') }}" class="btn btn-secondary">
+                    Back to Home
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <div class="info-section">
+        <h3>How it works</h3>
+        <div class="info-grid">
+            <div class="info-item">
+                <h4>1. Input Rules</h4>
+                <p>Paste your technical ABAC rules in dictionary format, including complexity metrics and coverage statistics.</p>
+            </div>
+            <div class="info-item">
+                <h4>2. AI Processing</h4>
+                <p>Our AI analyzes the rules and creates a natural language policy that anyone can understand.</p>
+            </div>
+            <div class="info-item">
+                <h4>3. Natural Language Output</h4>
+                <p>Receive a clear, conversational policy explanation that makes complex rules easy to understand.</p>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('policyForm').addEventListener('submit', function() {
+    const loader = document.getElementById('loader');
+    const generateBtn = document.getElementById('generateBtn');
+    
+    // Show loader
+    loader.style.display = 'flex';
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Generating Policy...';
+    
+    // Hide loader after a delay (in case of errors)
+    setTimeout(function() {
+        loader.style.display = 'none';
+        generateBtn.disabled = false;
+        generateBtn.textContent = 'Generate Natural Language Policy';
+    }, 30000); // 30 seconds timeout
+});
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+.form-container {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 2rem;
+    margin: 2rem 0;
+    border: 1px solid #e9ecef;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 5px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    transition: border-color 0.3s ease;
+}
+
+.form-group textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 5px;
+    background: white;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.form-group select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.form-text {
+    display: block;
+    margin-top: 0.5rem;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    justify-content: center;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+    color: white;
+}
+
+.info-section {
+    margin-top: 3rem;
+    padding: 2rem;
+    background: #e9ecef;
+    border-radius: 10px;
+}
+
+.info-section h3 {
+    color: #495057;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.info-item {
+    text-align: center;
+    padding: 1rem;
+}
+
+.info-item h4 {
+    color: #007bff;
+    margin-bottom: 1rem;
+}
+
+.info-item p {
+    color: #6c757d;
+    line-height: 1.5;
+}
+
+.alert {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+@media (max-width: 768px) {
+    .form-container {
+        padding: 1rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn {
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
